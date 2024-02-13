@@ -4,9 +4,8 @@
   "description": "",
   "private": true,
   "scripts": {
-    "start": "nodemon",
-    "start:dev": "ts-node ./src/*.ts",
-    "start:prod": "npm run build && ts-node ./dist/bundle.js",
+    "start": "npm run build && ts-node ./dist/bundle.js",
+    "start:dev": "nodemon ./src/*.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "webpack --config webpack.config.js --mode production",
     "lint": "npx eslint ./",

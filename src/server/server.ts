@@ -2,7 +2,7 @@ import http from 'http';
 
 require('dotenv').config();
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
 
 export const server = http.createServer((req, res) => {
   console.log('Url:', req.url);
