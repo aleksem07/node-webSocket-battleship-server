@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as http from 'http';
+import * as WebSocket from 'ws';
 
 export const server = http.createServer((req, res) => {
   const __dirname = path.resolve(path.dirname(''));
@@ -15,3 +16,5 @@ export const server = http.createServer((req, res) => {
     res.end(data);
   });
 });
+
+export const wss = new WebSocket.Server({ server });
