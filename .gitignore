@@ -16,9 +16,15 @@ dist-ssr
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.lnk
+*.PEM
+
+# System Files
+.DS_Store
+Thumbs.db
+[Dd]esktop.ini
