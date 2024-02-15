@@ -1,11 +1,5 @@
 import { wss } from '../server/server';
-import {
-  IWSMessage,
-  IRegistrationRequest,
-  IRegistrationResponse,
-  IError,
-  ICreateRoom,
-} from './interfaces';
+import { IWSMessage, IRegistrationRequest, IRegistrationResponse, ICreateRoom } from './interfaces';
 import { Rooms } from '../modules/rooms';
 import { Players } from '../modules/players';
 
@@ -24,46 +18,42 @@ export class WSHandler {
 
       ws.on('message', (message) => {
         console.log(message.toString());
-        const data: IWSMessage<
-          IRegistrationRequest | IRegistrationResponse | IError | ICreateRoom
-        > = JSON.parse(message.toString());
-        let errorResponse: IWSMessage<string> = {
-          type: 'error',
-          data: JSON.stringify({ message: 'Something went wrong', errorCode: 'SERVER_ERROR' }),
-          id: 0,
-        };
-        let resp: IWSMessage<string> = { type: 'error', data: '', id: 0 };
+        const data = JSON.parse(message.toString());
+        let user = this.players.players[data.id];
+        // let room = this.rooms.rooms[data.idGame];
 
         switch (data.type) {
-          case 'error':
-            errorResponse = {
-              type: 'error',
-              data: JSON.stringify({
-                message: 'Something went wrong',
-                errorCode: 'SERVER_ERROR',
-              } as IError),
-              id: 0,
-            };
-            ws.send(JSON.stringify(errorResponse));
-            break;
-
           case 'reg':
-            resp = {
+            const parsedData = JSON.parse(data.data);
+            const name = parsedData.name;
+            const password = parsedData.password;
+            user = this.players.registerPlayer(name, password);
+            console.log(user);
+            const response = {
               type: 'reg',
-              data: JSON.stringify({ name: '222', password: 'dfgdfgdfg' }),
+              data: JSON.stringify({
+                name: user.name,
+                index: user.id,
+                error: false,
+                errorText: '',
+              }),
               id: 0,
             };
             // wss.clients.forEach((client) => {
-            ws.send(JSON.stringify(resp));
+            ws.send(JSON.stringify(response));
             // });
             break;
 
           case 'create_room':
-            resp = { type: 'create_game', data: '{"idGame":"1","idPlayer":"0"}', id: 0 };
-            wss.clients.forEach((client) => {
-              client.send(JSON.stringify(resp));
-            });
-            break;
+          // const respRoom = {
+          //   type: 'create_game',
+          //   data: JSON.stringify({ idGame: room.id, idPlayer: user.id }),
+          //   id: 0,
+          // };
+          // wss.clients.forEach((client) => {
+          //   client.send(JSON.stringify(respRoom));
+          // });
+          // break;
         }
       });
 

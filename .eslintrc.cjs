@@ -12,5 +12,6 @@ module.exports = {
     'no-console': 0,
     '@typescript-eslint/no-var-requires': 0,
     'max-len': ['error', 100],
+    'no-case-declarations': 0,
   },
 };

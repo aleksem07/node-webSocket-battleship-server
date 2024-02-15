@@ -16,11 +16,6 @@ export interface IRegistrationResponse {
   errorText: string;
 }
 
-export interface IError {
-  message: string;
-  errorCode: string;
-}
-
 export interface ICreateRoom {
   idGame: number;
   idPlayer: number;

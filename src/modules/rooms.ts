@@ -6,7 +6,7 @@ interface IRoom {
 }
 
 export class Rooms {
-  private rooms: IRoom[] = [];
+  public rooms: IRoom[] = [];
 
   createRoom(players: IPlayer[]): IRoom {
     const room: IRoom = {

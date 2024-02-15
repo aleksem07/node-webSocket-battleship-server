@@ -5,7 +5,7 @@ export interface IPlayer {
 }
 
 export class Players {
-  private players: IPlayer[] = [];
+  public players: IPlayer[] = [];
 
   registerPlayer(name: string, password: string): IPlayer {
     const player: IPlayer = {
