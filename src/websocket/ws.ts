@@ -2,6 +2,7 @@ import { wss } from '../server/server';
 import { IWSMessage, IRegistrationRequest, IRegistrationResponse, ICreateRoom } from './interfaces';
 import { Rooms } from '../modules/rooms';
 import { Players } from '../modules/players';
+import WebSocket from 'ws';
 
 export class WSHandler {
   private rooms: Rooms;
@@ -10,6 +11,69 @@ export class WSHandler {
   constructor() {
     this.rooms = new Rooms();
     this.players = new Players();
+  }
+
+  private registerUser(name: string, userID: number, wss: WebSocket) {
+    const responseRegUser = {
+      type: 'reg',
+      data: JSON.stringify({
+        name,
+        index: userID,
+        error: false,
+        errorText: '',
+      }),
+      id: userID,
+    };
+
+    wss.send(JSON.stringify(responseRegUser));
+  }
+
+  private validation(name: string, password: string) {
+    if (!name || !password) {
+      console.error('Name and password are required');
+      return;
+    }
+    if (name.length < 5 || password.length < 5) {
+      console.error('Password must be at least 5 characters long');
+      return;
+    }
+  }
+
+  private updateRooms(id: number) {
+    const roomsUpdate = this.rooms.getRoomsUpdate();
+    const responceUpdateRoom = {
+      type: 'update_room',
+      data: JSON.stringify(roomsUpdate),
+      id,
+    };
+
+    wss.clients.forEach((client) => {
+      client.send(JSON.stringify(responceUpdateRoom));
+    });
+  }
+
+  private updateWinners(id: number) {
+    const allPlayers = this.players.players.map((player) => ({
+      name: player.name,
+      wins: player.wins,
+    }));
+    const responseUpdateWinners = {
+      type: 'update_winners',
+      data: JSON.stringify(allPlayers),
+      id,
+    };
+    wss.clients.forEach((client) => {
+      client.send(JSON.stringify(responseUpdateWinners));
+    });
+  }
+
+  private createRoom(roomID: number, userID: number, ws: WebSocket) {
+    const responseCreateRoom = {
+      type: 'create_game',
+      data: JSON.stringify({ idGame: roomID, idPlayer: userID }),
+      id: userID,
+    };
+    ws.send(JSON.stringify(responseCreateRoom));
   }
 
   public setupWS() {
@@ -31,81 +95,33 @@ export class WSHandler {
           case 'reg':
             const parsedData = JSON.parse(data.data);
 
-            if (!parsedData.name || !parsedData.password) {
-              console.error('Name and password are required');
-              return;
-            }
-            if (parsedData.name.length < 5 || parsedData.password.length < 5) {
-              console.error('Password must be at least 5 characters long');
-              return;
-            }
+            this.validation(parsedData.name, parsedData.password);
 
             const name = parsedData.name;
             const password = parsedData.password;
             user = this.players.registerPlayer(name, password);
+
+            this.players.setID(user.id);
+
+            console.log('user');
+            console.log(user.id);
             this.players.players[user.id] = user;
 
-            const responseRegUser = {
-              type: 'reg',
-              data: JSON.stringify({
-                name: user.name,
-                index: user.id,
-                error: false,
-                errorText: '',
-              }),
-              id: data.id,
-            };
-            // wss.clients.forEach((client) => {
-            ws.send(JSON.stringify(responseRegUser));
-            // });
+            this.registerUser(user.name, user.id, ws);
 
-            const updateRoom = this.rooms.getRoomsUpdate();
-            console.log(updateRoom);
-            const responceUpdateRoom = {
-              type: 'update_room',
-              data: JSON.stringify(updateRoom),
-              id: data.id,
-            };
-            wss.clients.forEach((client) => {
-              client.send(JSON.stringify(responceUpdateRoom));
-            });
+            this.updateRooms(data.id);
 
-            const allPlayers = this.players.players.map((player) => ({
-              name: player.name,
-              wins: player.wins,
-            }));
-            const responseUpdateWinners = {
-              type: 'update_winners',
-              data: JSON.stringify(allPlayers),
-              id: data.id,
-            };
-            wss.clients.forEach((client) => {
-              client.send(JSON.stringify(responseUpdateWinners));
-            });
+            this.updateWinners(data.id);
 
-            console.log(this.players.players);
             break;
 
           case 'create_room':
+            user = this.players.players[this.players.getID()];
             room = this.rooms.createRoom([user]);
 
-            const responseCreateRoom = {
-              type: 'create_game',
-              data: JSON.stringify({ idGame: room.id, idPlayer: user.id }),
-              id: data.id,
-            };
-            ws.send(JSON.stringify(responseCreateRoom));
+            this.createRoom(room.id, user.id, ws);
 
-            const updateRoom1 = this.rooms.getRoomsUpdate();
-            console.log(updateRoom1);
-            const responceUpdateRoom1 = {
-              type: 'update_room',
-              data: JSON.stringify(updateRoom1),
-              id: data.id,
-            };
-            wss.clients.forEach((client) => {
-              client.send(JSON.stringify(responceUpdateRoom1));
-            });
+            // this.updateRooms(data.id);
 
             break;
 
