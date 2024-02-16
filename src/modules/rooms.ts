@@ -16,4 +16,14 @@ export class Rooms {
     this.rooms.push(room);
     return room;
   }
+
+  getRoomsUpdate(): { roomId: number; roomUsers: { name: string; index: number }[] }[] {
+    return this.rooms.map((room) => ({
+      roomId: room.id,
+      roomUsers: room.players.map((player) => ({
+        name: player.name,
+        index: player.id,
+      })),
+    }));
+  }
 }
