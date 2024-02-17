@@ -22,7 +22,7 @@ export class WSHandler {
         error: false,
         errorText: '',
       }),
-      id: userID,
+      id: 0,
     };
 
     wss.send(JSON.stringify(responseRegUser));
@@ -43,19 +43,19 @@ export class WSHandler {
     const responseCreateRoom = {
       type: 'create_game',
       data: JSON.stringify({ idGame: roomID, idPlayer: userID }),
-      id: userID,
+      id: 0,
     };
     wss.clients.forEach((client) => {
       client.send(JSON.stringify(responseCreateRoom));
     });
   }
 
-  private updateRooms(id: number) {
+  private updateRooms() {
     const roomsUpdate = this.rooms.getRoomsUpdate();
     const responceUpdateRoom = {
       type: 'update_room',
       data: JSON.stringify(roomsUpdate),
-      id,
+      id: 0,
     };
 
     wss.clients.forEach((client) => {
@@ -63,7 +63,7 @@ export class WSHandler {
     });
   }
 
-  private updateWinners(id: number) {
+  private updateWinners() {
     const allPlayers = this.players.players.map((player) => ({
       name: player.name,
       wins: player.wins,
@@ -71,7 +71,7 @@ export class WSHandler {
     const responseUpdateWinners = {
       type: 'update_winners',
       data: JSON.stringify(allPlayers),
-      id,
+      id: 0,
     };
     wss.clients.forEach((client) => {
       client.send(JSON.stringify(responseUpdateWinners));
@@ -110,9 +110,9 @@ export class WSHandler {
 
             this.registerUser(user.name, user.id, ws);
 
-            this.updateRooms(data.id);
+            this.updateRooms();
 
-            this.updateWinners(data.id);
+            this.updateWinners();
 
             break;
 
@@ -120,7 +120,7 @@ export class WSHandler {
             user = this.players.players[this.players.getID()];
             this.rooms.createRoom([user]);
 
-            this.updateRooms(data.id);
+            this.updateRooms();
 
             break;
 
@@ -130,7 +130,7 @@ export class WSHandler {
             const idGame = parsedData2.indexRoom;
 
             this.rooms.addToRoom(idGame, user);
-            this.updateRooms(data.id);
+            this.updateRooms();
 
             console.log(this.rooms.rooms[idGame].players);
 
