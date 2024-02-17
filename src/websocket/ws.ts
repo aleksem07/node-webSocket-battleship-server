@@ -39,6 +39,17 @@ export class WSHandler {
     }
   }
 
+  private createGame(roomID: number, userID: number) {
+    const responseCreateRoom = {
+      type: 'create_game',
+      data: JSON.stringify({ idGame: roomID, idPlayer: userID }),
+      id: userID,
+    };
+    wss.clients.forEach((client) => {
+      client.send(JSON.stringify(responseCreateRoom));
+    });
+  }
+
   private updateRooms(id: number) {
     const roomsUpdate = this.rooms.getRoomsUpdate();
     const responceUpdateRoom = {
@@ -67,15 +78,6 @@ export class WSHandler {
     });
   }
 
-  private createRoom(roomID: number, userID: number, ws: WebSocket) {
-    const responseCreateRoom = {
-      type: 'create_game',
-      data: JSON.stringify({ idGame: roomID, idPlayer: userID }),
-      id: userID,
-    };
-    ws.send(JSON.stringify(responseCreateRoom));
-  }
-
   public setupWS() {
     wss.on('connection', (ws) => {
       console.log('Client connected');
@@ -84,7 +86,6 @@ export class WSHandler {
         console.log(message.toString());
         const data = JSON.parse(message.toString());
         let user = this.players.players[data.id];
-        let room = this.rooms.rooms[data.idGame];
 
         if (!data) {
           console.error('No data received');
@@ -117,24 +118,38 @@ export class WSHandler {
 
           case 'create_room':
             user = this.players.players[this.players.getID()];
-            room = this.rooms.createRoom([user]);
+            this.rooms.createRoom([user]);
 
-            this.createRoom(room.id, user.id, ws);
-
-            // this.updateRooms(data.id);
+            this.updateRooms(data.id);
 
             break;
 
-          // case 'add_ships':
-          //   const responseStartGame = {
-          //     type: 'start_game',
-          //     data: JSON.stringify({ idGame: 0, idPlayer: user.id }),
-          //     id: data.id,
-          //   };
-          //   // wss.clients.forEach((client) => {
-          //   ws.send(JSON.stringify(responseStartGame));
-          //   // });
-          //   break;
+          case 'add_user_to_room':
+            user = this.players.players[this.players.getID()];
+            const parsedData2 = JSON.parse(data.data);
+            const idGame = parsedData2.indexRoom;
+
+            this.rooms.addToRoom(idGame, user);
+            this.updateRooms(data.id);
+
+            console.log(this.rooms.rooms[idGame].players);
+
+            if (this.rooms.rooms[idGame].players.length > 1) {
+              this.createGame(idGame, user.id);
+              this.rooms.deleteRoom(idGame);
+            }
+
+            break;
+
+          case 'add_ships':
+            const respStart = {
+              type: 'start_game',
+              data: JSON.stringify({}),
+              id: user.id,
+            };
+
+            ws.send(JSON.stringify(respStart));
+            break;
 
           default:
             console.error('Unknown message type');

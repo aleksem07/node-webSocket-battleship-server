@@ -17,6 +17,18 @@ export class Rooms {
     return room;
   }
 
+  addToRoom(roomId: number, player: IPlayer) {
+    const room = this.rooms.find((room) => room.id === roomId);
+    if (!room) {
+      return;
+    }
+    room.players.push(player);
+  }
+
+  deleteRoom(roomId: number) {
+    this.rooms = this.rooms.filter((room) => room.id !== roomId);
+  }
+
   getRoomsUpdate(): { roomId: number; roomUsers: { name: string; index: number }[] }[] {
     return this.rooms.map((room) => ({
       roomId: room.id,
