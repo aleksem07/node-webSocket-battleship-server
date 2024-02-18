@@ -1,12 +1,13 @@
 import { wss } from '../server/server';
-import { IWSMessage, IRegistrationRequest, IRegistrationResponse, ICreateRoom } from './interfaces';
 import { Rooms } from '../modules/rooms';
 import { Players } from '../modules/players';
+import { Type } from '../common/const';
 import WebSocket from 'ws';
 
 export class WSHandler {
   private rooms: Rooms;
   private players: Players;
+  private shipsAddedCount: number = 0;
 
   constructor() {
     this.rooms = new Rooms();
@@ -26,6 +27,7 @@ export class WSHandler {
     };
 
     wss.send(JSON.stringify(responseRegUser));
+    this.players.setPlayerWs(userID, wss);
   }
 
   private validation(name: string, password: string) {
@@ -79,7 +81,7 @@ export class WSHandler {
   }
 
   public setupWS() {
-    wss.on('connection', (ws) => {
+    wss.on('connection', (ws: WebSocket) => {
       console.log('Client connected');
 
       ws.on('message', (message) => {
@@ -93,7 +95,7 @@ export class WSHandler {
         }
 
         switch (data.type) {
-          case 'reg':
+          case Type.REGISTRATION_USER:
             const parsedData = JSON.parse(data.data);
 
             this.validation(parsedData.name, parsedData.password);
@@ -125,30 +127,87 @@ export class WSHandler {
             break;
 
           case 'add_user_to_room':
-            user = this.players.players[this.players.getID()];
             const parsedData2 = JSON.parse(data.data);
             const idGame = parsedData2.indexRoom;
+            const currentUserID2 = this.players.getID();
+            const currentUser2 = this.players.players[currentUserID2];
 
-            this.rooms.addToRoom(idGame, user);
+            this.rooms.addToRoom(idGame, currentUser2);
+            this.players.setPlayerWs(currentUserID2, ws);
+
             this.updateRooms();
 
             console.log(this.rooms.rooms[idGame].players);
 
             if (this.rooms.rooms[idGame].players.length > 1) {
-              this.createGame(idGame, user.id);
-              this.rooms.deleteRoom(idGame);
+              this.createGame(idGame, currentUser2.id);
+              // this.rooms.deleteRoom(idGame);
             }
 
             break;
 
           case 'add_ships':
-            const respStart = {
+            this.shipsAddedCount++;
+            const parsedData3 = JSON.parse(data.data);
+            const idGame2 = 0;
+            console.log('players ------------------');
+            console.log(this.rooms.rooms[idGame2].players);
+
+            const room = this.rooms.rooms[idGame2];
+            console.log('room ------------------');
+            console.log(room);
+
+            const currentPlayerIndex1 = room.players[0].id;
+            const currentPlayerIndex2 = room.players[1].id;
+
+            const respStart1 = {
               type: 'start_game',
-              data: JSON.stringify({}),
-              id: user.id,
+              data: JSON.stringify({
+                ships: parsedData3.ships,
+                currentPlayerIndex: currentPlayerIndex1,
+              }),
             };
 
-            ws.send(JSON.stringify(respStart));
+            const respStart2 = {
+              type: 'start_game',
+              data: JSON.stringify({
+                ships: parsedData3.ships,
+                currentPlayerIndex: currentPlayerIndex2,
+              }),
+            };
+
+            room.players.forEach((player) => {
+              const ws = this.players.playerWsMap.get(player.id);
+              if (ws) {
+                ws.send(
+                  JSON.stringify(player.id === currentPlayerIndex1 ? respStart1 : respStart2)
+                );
+              } else {
+                console.error(`WebSocket not found for player with ID ${player.id}`);
+              }
+            });
+            break;
+
+          case 'attack':
+            if (this.shipsAddedCount === 2) {
+              const currentUserID1 = this.players.getID();
+              const currentUser = this.players.players[currentUserID1];
+              console.log(currentUser);
+
+              const parsedData4 = JSON.parse(data.data);
+              const attack = parsedData4.position;
+              const respAttack = {
+                type: 'attack',
+                data: JSON.stringify({
+                  attack,
+                  currentPlayerIndex: currentUserID1,
+                  status: 'miss',
+                }),
+                id: currentUserID1,
+              };
+
+              ws.send(JSON.stringify(respAttack));
+            }
             break;
 
           default:

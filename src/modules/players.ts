@@ -1,3 +1,5 @@
+import WebSocket from 'ws';
+
 export interface IPlayer {
   id: number;
   name: string;
@@ -8,6 +10,7 @@ export interface IPlayer {
 export class Players {
   public players: IPlayer[] = [];
   public id: number = 0;
+  public playerWsMap: Map<number, WebSocket> = new Map();
 
   registerPlayer(name: string, password: string, wins = 0): IPlayer {
     const player: IPlayer = {
@@ -26,5 +29,9 @@ export class Players {
 
   getID() {
     return this.id;
+  }
+
+  setPlayerWs(playerId: number, ws: WebSocket) {
+    this.playerWsMap.set(playerId, ws);
   }
 }
