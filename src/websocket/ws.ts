@@ -148,66 +148,81 @@ export class WSHandler {
 
           case 'add_ships':
             this.shipsAddedCount++;
-            const parsedData3 = JSON.parse(data.data);
-            const idGame2 = 0;
-            console.log('players ------------------');
-            console.log(this.rooms.rooms[idGame2].players);
+            if (this.shipsAddedCount === 2) {
+              const parsedData3 = JSON.parse(data.data);
+              const idGame2 = 0;
+              console.log('players ------------------');
+              console.log(this.rooms.rooms[idGame2].players);
 
-            const room = this.rooms.rooms[idGame2];
-            console.log('room ------------------');
-            console.log(room);
+              const room = this.rooms.rooms[idGame2];
+              console.log('room ------------------');
+              console.log(room);
 
-            const currentPlayerIndex1 = room.players[0].id;
-            const currentPlayerIndex2 = room.players[1].id;
+              const currentPlayerIndex1 = room.players[0].id;
+              const currentPlayerIndex2 = room.players[1].id;
 
-            const respStart1 = {
-              type: 'start_game',
-              data: JSON.stringify({
-                ships: parsedData3.ships,
-                currentPlayerIndex: currentPlayerIndex1,
-              }),
-            };
+              const respStart1 = {
+                type: 'start_game',
+                data: JSON.stringify({
+                  ships: parsedData3.ships,
+                  currentPlayerIndex: currentPlayerIndex1,
+                }),
+              };
 
-            const respStart2 = {
-              type: 'start_game',
-              data: JSON.stringify({
-                ships: parsedData3.ships,
-                currentPlayerIndex: currentPlayerIndex2,
-              }),
-            };
+              const respStart2 = {
+                type: 'start_game',
+                data: JSON.stringify({
+                  ships: parsedData3.ships,
+                  currentPlayerIndex: currentPlayerIndex2,
+                }),
+              };
 
-            room.players.forEach((player) => {
-              const ws = this.players.playerWsMap.get(player.id);
-              if (ws) {
-                ws.send(
-                  JSON.stringify(player.id === currentPlayerIndex1 ? respStart1 : respStart2)
-                );
-              } else {
-                console.error(`WebSocket not found for player with ID ${player.id}`);
-              }
-            });
+              room.players.forEach((player) => {
+                const ws = this.players.playerWsMap.get(player.id);
+                if (ws) {
+                  ws.send(
+                    JSON.stringify(player.id === currentPlayerIndex1 ? respStart1 : respStart2)
+                  );
+                } else {
+                  console.error(`WebSocket not found for player with ID ${player.id}`);
+                }
+              });
+
+              const respTurn = {
+                type: 'turn',
+                data: JSON.stringify({
+                  currentPlayer: 0,
+                }),
+              };
+
+              wss.clients.forEach((client) => {
+                client.send(JSON.stringify(respTurn));
+              });
+            }
             break;
 
           case 'attack':
-            if (this.shipsAddedCount === 2) {
-              const currentUserID1 = this.players.getID();
-              const currentUser = this.players.players[currentUserID1];
-              console.log(currentUser);
+            const attackParsedData = JSON.parse(data.data);
+            const x = attackParsedData.x;
+            const y = attackParsedData.y;
+            const currentUserID1 = this.players.getID();
+            const currentUser = this.players.players[currentUserID1];
+            console.log(currentUser);
 
-              const parsedData4 = JSON.parse(data.data);
-              const attack = parsedData4.position;
-              const respAttack = {
-                type: 'attack',
-                data: JSON.stringify({
-                  attack,
-                  currentPlayerIndex: currentUserID1,
-                  status: 'miss',
-                }),
-                id: currentUserID1,
-              };
+            const parsedData4 = JSON.parse(data.data);
+            const attack = parsedData4.position;
+            const respAttack = {
+              type: 'attack',
+              data: JSON.stringify({
+                attack,
+                position: { x, y },
+                status: 'shot',
+              }),
+              id: currentUserID1,
+            };
 
-              ws.send(JSON.stringify(respAttack));
-            }
+            ws.send(JSON.stringify(respAttack));
+
             break;
 
           default:
